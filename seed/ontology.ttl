@@ -1,0 +1,122 @@
+@prefix br:   <http://blastradius.dev/ontology#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+# ============================================================
+# ONTOLOGY
+# ============================================================
+
+# --- Classes ---
+
+br:Dependency a rdfs:Class ;
+    rdfs:comment "Abstract superclass for anything a Service can depend on" .
+
+br:Service a rdfs:Class ;
+    rdfs:subClassOf br:Dependency ;
+    rdfs:comment "A deployable backend service" .
+
+br:Database a rdfs:Class ;
+    rdfs:subClassOf br:Dependency ;
+    rdfs:comment "A persistent data store" .
+
+br:Package a rdfs:Class ;
+    rdfs:subClassOf br:Dependency ;
+    rdfs:comment "An external library or package dependency" .
+
+br:APIEndpoint a rdfs:Class ;
+    rdfs:comment "A specific endpoint exposed by a Service" .
+
+br:Team a rdfs:Class ;
+    rdfs:comment "A team that owns one or more services" .
+
+# --- Properties ---
+
+br:dependsOn a rdf:Property ;
+    rdfs:domain br:Service ;
+    rdfs:range br:Dependency ;
+    rdfs:comment "Service A requires Dependency B to function" .
+
+br:calls a rdf:Property ;
+    rdfs:domain br:Service ;
+    rdfs:range br:Service ;
+    rdfs:comment "Service A makes runtime calls to Service B" .
+
+br:fallbackTo a rdf:Property ;
+    rdfs:domain br:Dependency ;
+    rdfs:range br:Dependency ;
+    rdfs:comment "If the subject is unavailable, the object can serve as a substitute, dampening cascade impact" .
+
+br:ownedBy a rdf:Property ;
+    rdfs:domain br:Service ;
+    rdfs:range br:Team ;
+    rdfs:comment "Which team is responsible for a service" .
+
+br:impactWeight a rdf:Property ;
+    rdfs:comment "Qualifier (0.0-1.0) on a dependsOn/calls edge via RDF-star, indicating how severely failure propagates across it" .
+
+br:syncType a rdf:Property ;
+    rdfs:comment "Qualifier on a calls edge via RDF-star: sync or async" .
+
+# ============================================================
+# SEED DATA
+# ============================================================
+
+# --- Teams ---
+
+br:teamPlatform a br:Team .
+br:teamCheckout a br:Team .
+br:teamCatalog a br:Team .
+
+# --- Services ---
+
+br:frontend        a br:Service ; br:ownedBy br:teamPlatform .
+br:apiGateway       a br:Service ; br:ownedBy br:teamPlatform .
+br:authService       a br:Service ; br:ownedBy br:teamPlatform .
+br:checkoutService   a br:Service ; br:ownedBy br:teamCheckout .
+br:paymentApi        a br:Service ; br:ownedBy br:teamCheckout .
+br:paymentApiBackup  a br:Service ; br:ownedBy br:teamCheckout .
+br:inventoryService  a br:Service ; br:ownedBy br:teamCatalog .
+br:catalogService    a br:Service ; br:ownedBy br:teamCatalog .
+
+# --- Databases ---
+
+br:userDb      a br:Database .
+br:warehouseDb a br:Database .
+br:catalogDb   a br:Database .
+
+# --- Dependency edges ---
+
+br:frontend br:dependsOn br:apiGateway .
+br:apiGateway br:dependsOn br:authService .
+br:authService br:dependsOn br:userDb .
+br:apiGateway br:dependsOn br:checkoutService .
+br:apiGateway br:dependsOn br:catalogService .
+br:checkoutService br:dependsOn br:paymentApi .
+br:checkoutService br:dependsOn br:inventoryService .
+br:inventoryService br:dependsOn br:warehouseDb .
+br:catalogService br:dependsOn br:catalogDb .
+
+# --- Fallback edge (dampens cascade instead of propagating) ---
+
+br:paymentApi br:fallbackTo br:paymentApiBackup .
+
+# --- Call edges (runtime, may differ from dependsOn topology) ---
+
+br:checkoutService br:calls br:catalogService .
+
+# ============================================================
+# RDF-star qualifiers on the above edges
+# ============================================================
+
+<< br:frontend br:dependsOn br:apiGateway >> br:impactWeight "1.0"^^xsd:decimal .
+<< br:apiGateway br:dependsOn br:authService >> br:impactWeight "1.0"^^xsd:decimal .
+<< br:authService br:dependsOn br:userDb >> br:impactWeight "1.0"^^xsd:decimal .
+<< br:apiGateway br:dependsOn br:checkoutService >> br:impactWeight "0.9"^^xsd:decimal .
+<< br:apiGateway br:dependsOn br:catalogService >> br:impactWeight "0.6"^^xsd:decimal .
+<< br:checkoutService br:dependsOn br:paymentApi >> br:impactWeight "0.9"^^xsd:decimal .
+<< br:checkoutService br:dependsOn br:inventoryService >> br:impactWeight "0.7"^^xsd:decimal .
+<< br:inventoryService br:dependsOn br:warehouseDb >> br:impactWeight "1.0"^^xsd:decimal .
+<< br:catalogService br:dependsOn br:catalogDb >> br:impactWeight "1.0"^^xsd:decimal .
+
+<< br:checkoutService br:calls br:catalogService >> br:syncType "sync" .
