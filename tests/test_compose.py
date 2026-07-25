@@ -18,3 +18,4 @@ print()
 print('Edges:')
 for e in result.edges:
     print(f'  {e.source} --[{e.edge_type}]--> {e.target}  (origin={e.origin})')
+    
