@@ -1,0 +1,22 @@
+services:
+  frontend:
+    image: frontend:latest
+    depends_on:
+      - api
+
+  api:
+    image: api:latest
+    depends_on:
+      db:
+        condition: service_healthy
+    links:
+      - cache:redis
+
+  db:
+    image: postgres:16
+
+  cache:
+    image: redis:7
+
+  standalone-worker:
+    image: worker:latest
