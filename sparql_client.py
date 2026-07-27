@@ -1,5 +1,5 @@
 # sparqlwrapper wrapper
-from SPARQLWrapper import SPARQLWrapper, JSON, TURTLE, POST
+from SPARQLWrapper import SPARQLWrapper, JSON, POST
 from importers.base import normalize_name
 from dotenv import load_dotenv
 import os
@@ -155,3 +155,25 @@ def delete_edge(source: str, target: str) -> None:
       }}
     """
     _run_update(DELETE_WEIGHT_QUERY)
+
+def get_blast_radius(name: str) -> list[str]:
+    name = normalize_name(name)
+
+    BLAST_RADIUS_QUERY = f"""
+      PREFIX br: <http://blastradius.dev/ontology#>
+
+      SELECT ?affected
+      WHERE {{ ?affected br:dependsOn+ br:{name} . }} 
+      """
+    
+    wrapper = SPARQLWrapper(FUSEKI_ENDPOINT)
+    wrapper.setQuery(BLAST_RADIUS_QUERY)
+    wrapper.setReturnFormat(JSON)
+    graph = wrapper.queryAndConvert()["results"]["bindings"]
+
+    ans = set()
+    for node in graph:
+        node_uri = node.get("affected").get("value")
+        node = str(node_uri).split("#")[-1]
+        ans.add(node)
+    return list(ans)

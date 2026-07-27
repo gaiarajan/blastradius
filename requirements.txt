@@ -1,1 +1,6 @@
+fastapi==0.140.2
+pydantic==2.13.4
+python-dotenv==1.2.2
 PyYAML==6.0.3
+SPARQLWrapper==2.0.0
+SPARQLWrapper==2.0.0
