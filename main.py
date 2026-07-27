@@ -4,11 +4,18 @@ uvicorn main:app --reload
 """
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sparql_client import fetch_graph, insert_node, insert_edge, delete_node, delete_edge, get_blast_radius
 from simulate import simulate_cascade
 
 app = FastAPI()
+app.add_middleware(
+   CORSMiddleware,
+   allow_origins=["http://localhost:5173"],
+   allow_methods=["*"],
+   allow_headers=["*"],
+)
 
 class NodeCreate(BaseModel):
     name: str
@@ -39,13 +46,13 @@ def create_node(node: NodeCreate):
  
 @app.post("/edges", status_code=201)
 def create_edge(edge: EdgeCreate):
-    insert_edge(edge.source, edge.target, edge.impact_weight),
+    insert_edge(edge.source, edge.target, edge.impact_weight)
     return {"created": f"{edge.source} -> {edge.target}"}
  
 @app.delete("/nodes/{name}")
 def delete_node_route(name: str):
     n = delete_node(name)
-    return {"deleted_node": name, "edges_removed": N}
+    return {"deleted_node": name, "edges_removed": n}
  
 @app.delete("/edges")
 def delete_edge_route(source: str, target: str):
