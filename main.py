@@ -5,7 +5,8 @@ uvicorn main:app --reload
 
 from fastapi import FastAPI
 from pydantic import BaseModel
-from sparql_client import fetch_graph, insert_node, insert_edge, delete_node, delete_edge
+from sparql_client import fetch_graph, insert_node, insert_edge, delete_node, delete_edge, get_blast_radius
+from simulate import simulate_cascade
 
 app = FastAPI()
 
@@ -22,8 +23,14 @@ def get_graph():
     return fetch_graph()
  
 @app.get("/blast-radius/{name}")
-def get_blast_radius(name: str):
-    return fetch_graph()
+def blast_radius_route(name: str):
+    affected = get_blast_radius(name)
+    return {"node": name, "affected": affected}
+
+@app.get("/simulate/{name}")
+def simulate_route(name: str, decay: float = 0.5):
+    impact = simulate_cascade(name, decay)
+    return {"node": name, "impact": impact}
 
 @app.post("/nodes", status_code=201)
 def create_node(node: NodeCreate):
