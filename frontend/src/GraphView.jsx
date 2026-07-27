@@ -149,8 +149,8 @@ export default function GraphView() {
         backgroundColor="#fafafa"
         linkLabel={(link) => {
           const type = link.edge_type || "unknown";
-          const confidence = link.impactWeight !== undefined ? link.impactWeight.toFixed(2) : "n/a";
-          return `${type} (confidence: ${confidence})`;
+          const impactWeight = link.impactWeight !== undefined ? link.impactWeight.toFixed(2) : "n/a";
+          return `${type} (impactWeight: ${impactWeight})`;
         }}
         linkWidth={(link) => (link.impactWeight ? 1 + link.impactWeight * 3 : 1)}
         linkDirectionalArrowLength={6}
