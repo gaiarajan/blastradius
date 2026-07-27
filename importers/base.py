@@ -5,13 +5,18 @@ Shared interface for all importers
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Optional
+import re
 
 
 def normalize_name(name: str) -> str:
     """
     Service-Name -> service_name
+    ServiceName -> service_name
     """
-    return (str.lower(name.strip())).replace('-', '_')
+    name = name.strip()
+    name = re.sub(r'([a-z])([A-Z])', r'\1_\2', name)
+    name = name.lower().replace('-', '_').replace(' ', '_')
+    return name
 
 
 @dataclass
