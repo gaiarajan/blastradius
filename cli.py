@@ -3,6 +3,8 @@ import argparse
 from importers.compose import ComposeImporter
 from importers.k8s import K8sImporter
 
+from sparql_client import insert_node, insert_edge
+
 IMPORTERS = {
     "compose": ComposeImporter,
     "k8s": K8sImporter,
@@ -13,6 +15,12 @@ def cmd_import(args):
     importer = importer_cls()
 
     result = importer.parse(args.path)
+
+    for node in result.nodes:
+        insert_node(node)
+
+    for edge in result.edges:
+        insert_edge(edge.source, edge.target, edge.weight)
 
     print(result)
 
