@@ -3,30 +3,30 @@
 
 Ask _what breaks if payment-api goes down?_ and get a live answer computed from your project's Compose/K8s files, in a terminal command, a live visualization, or an automated PR comment.
 
-Dependencies between services are represented internally as RDF triples. Existing blast-radius tools use bespoke graph structures; this project explores whether a standard RDF knowledge graph can serve a similar use case, while staying queryable and extensible via SPARQL. Read more in [Why SPARQL?](https://github.com/gaiarajan/sparqlmotion/tree/main/README.md#why-sparql).
+Dependencies between services are represented internally as RDF triples. Existing blast-radius tools use bespoke graph structures; this project explores whether a standard RDF knowledge graph can serve a similar use case, while staying queryable and extensible via SPARQL. Read more in [Why SPARQL?](#why-sparql)
 
 
 ## Table of contents
-1. [Demos](https://github.com/gaiarajan/sparqlmotion/tree/main#demos)
-2. [Quickstart](https://github.com/gaiarajan/sparqlmotion/tree/main#quickstart)
-3. [Why SPARQL?](https://github.com/gaiarajan/sparqlmotion/tree/main/README.md#why-sparql)
-4. [Technical details](https://github.com/gaiarajan/sparqlmotion/tree/main/README.md#technical-details)
-5. [Why did you call it that?](https://github.com/gaiarajan/sparqlmotion/tree/main/README.md#why-is-it-called-that)
-
+1. [Demos](#demos)
+2. [Quickstart](#quickstart)
+3. [Why SPARQL?](#why-sparql)
+4. [Technical details](#technical-details)
+5. [Why did you call it that?](#why-is-this-project-called-that)
    
 ## Demos
 
 In the interactive web UI:
+<img width="850" alt="SPARQLMotion web UI" src="https://github.com/user-attachments/assets/44f9d20d-d4c1-4700-be41-672a4fe4fe7f" />
 
-<img width="900" alt="SPARQLMotion web UI" src="https://github.com/user-attachments/assets/6ab9ec6b-3333-44c1-9288-4ee86994a19b" />
-
+<br /><br />
 As an automated PR comment ([example](https://github.com/gaiarajan/blastradius-action-test/pull/1)):
 
-<img width="900" alt="SPARQLMotion Github Action" src="https://github.com/user-attachments/assets/085df82b-2b81-4e5f-854f-70890a37dd54" />
+<img width="850" alt="SPARQLMotion Github Action" src="https://github.com/user-attachments/assets/085df82b-2b81-4e5f-854f-70890a37dd54" />
 
+<br /><br />
 In the CLI:
 
-<img width="900" alt="SPARQLMotion CLI" src="https://github.com/user-attachments/assets/ded96e89-8fee-4674-81a9-de8f4c19e5f0" />
+<img width="850" alt="SPARQLMotion CLI" src="https://github.com/user-attachments/assets/ded96e89-8fee-4674-81a9-de8f4c19e5f0" />
 
 
 ## Quickstart
@@ -79,11 +79,11 @@ If you get permission issues, run `chmod +x setup.sh` first.
 
 `./setup.sh --reset` stops Fuseki and wipes `./fuseki/data`.
 
-If you prefer to run the steps manually, [here are the commands](https://github.com/gaiarajan/sparqlmotion/edit/main/README.md#appendix).
+If you prefer to run the steps manually, [here are the commands](#appendix).
 
 ### CLI (ad hoc, terminal)
 
-_You must have done the [shared setup](https://github.com/gaiarajan/sparqlmotion/edit/main/README.md#0-shared-setup) above first._
+_You must have done the [shared setup](#0-shared-setup) above first._
 
 ```bash
 # import your service definitions (compose or k8s)
@@ -120,7 +120,7 @@ python cli.py check checkout_service
 
 ### Mode 2: Web UI 
 
-_You must have done the [shared setup](https://github.com/gaiarajan/sparqlmotion/edit/main/README.md#0-shared-setup) above first._
+_You must have done the [shared setup](#0-shared-setup) above first._
 
 ```bash
 # backend (from repo root, Fuseki already running from step 0)
@@ -139,8 +139,10 @@ npm run dev
 The second URL above is a live graph of your project's dependencies!
 
 ## Why SPARQL?
+[SPARQL](https://www.w3.org/TR/sparql11-query/) is the standard query language for RDF, which represents graph data as *triples*
+(`subject–predicate–object`). 
 
-[SPARQL](https://www.w3.org/TR/sparql11-query/) allows us to represent the dependencies between services as _relationships_ between triples, instead of cross-sections of lists or tables. It also fits well with cascading service failures in a couple interesting ways: 
+RDF allows us to represent the dependencies between services as _relationships_ in a graph, instead of rows in lists or tables. SPARQL also fits very well with cascading service failures in a couple interesting ways: 
 
 - It allows us to calculate recursive failures in a single property-path expression: `?affected br:dependsOn+ br:payment-api`.
 - RDF-star puts metadata directly on edges, allowing us to represent criticality seamlessly within the edges themselves, rather than in a join table or a single node's properties.
@@ -148,7 +150,7 @@ The second URL above is a live graph of your project's dependencies!
 
 ## Technical details
 
-As more code is entered into large codebases with no or little context, understanding the blast radius of a change (_without_ having to maintain a separate table with each dependency change) feels increasingly important. 
+As more code is entered into large codebases with no or little context, understanding the blast radius of a change (_without_ having to maintain a separate table through each dependency change) feels increasingly important. 
 
 This project uses [Apache Jena Fuseki](https://jena.apache.org/documentation/fuseki2/) for the triple store; 
 Python + [FastAPI](https://fastapi.tiangolo.com/) for the backend, using SPARQLWrapper and SPARQL queries to talk to Fuseki;
@@ -156,8 +158,31 @@ Python + [FastAPI](https://fastapi.tiangolo.com/) for the backend, using SPARQLW
 
 Architecture diagram:
 
+       Docker Compose      Kubernetes manifests
+                 │                 │
+                 └────────┬────────┘
+                          ▼
+              Dependency importers (importers/)
+                          │
+                          ▼
+                 RDF knowledge graph
+                 Apache Jena Fuseki
+                          │
+                          ▼
+                 Blast radius engine
+                    (SPARQL + BFS)
+                 ┌────────┼─────────┐
+                 ▼        ▼         ▼
+                CLI    GitHub CI   Web UI
 
-## Why is it called that?
+Five major layers:
+1. Import layer: `importers/`. Discovers supported infrastructure files, parses Docker compose and Kubernetes manifests, normalizes resource names, produces nodes and edges.
+2. Storage layer: `sparql_client.py`. All communication with Fuseki, including SPARQL queries, updates, graph fetches, etc.
+3. Analysis layer: `simulate.py` (cascade simulation with BFS), `diff_detect.py` (maps Git diffs to affected services)
+4. Interface layer: `cli.py` (CLI interface), `main.py`(FastAPI server), `frontend/`
+5. Automation/GH action: `action.yml, .github/workflows/*`. The GitHub Action imports the repository graph, runs blast-radius analysis, and posts a summary of affected services. 
+
+## Why is this project called that?
 
 SPARQL is my favorite query language. 
 Donnie Darko is one of my favorite movies. 
