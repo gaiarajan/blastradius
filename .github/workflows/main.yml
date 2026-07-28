@@ -2,9 +2,7 @@ name: Blast Radius Check
 
 on:
   pull_request:
-  push:
-    branches:
-      - main
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
