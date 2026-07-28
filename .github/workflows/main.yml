@@ -19,7 +19,10 @@ jobs:
           fetch-depth: 0
 
       - name: Start Fuseki
-        run: docker compose up -d fuseki
+        run: |
+          docker compose up -d fuseki
+          docker ps
+          docker logs blastradius-fuseki
         env:
           FUSEKI_ADMIN_PASSWORD: ${{ secrets.FUSEKI_ADMIN_PASSWORD }}
 
@@ -49,7 +52,7 @@ jobs:
           curl -v \
             -u admin:${{ secrets.FUSEKI_ADMIN_PASSWORD }} \
             http://localhost:3030/\$/datasets
-            
+
       - name: Import project graph
         run: python cli.py import-all .
         env:
