@@ -44,6 +44,7 @@ jobs:
         run: python cli.py import-all .
         env:
           FUSEKI_ADMIN_PASSWORD: ${{ secrets.FUSEKI_ADMIN_PASSWORD }}
+          FUSEKI_USER: admin
 
       - name: Run check-diff
         id: check
@@ -55,6 +56,9 @@ jobs:
           echo "result<<EOF" >> "$GITHUB_OUTPUT"
           echo "$RESULT" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
+        env:
+          FUSEKI_ADMIN_PASSWORD: ${{ secrets.FUSEKI_ADMIN_PASSWORD }}
+          FUSEKI_USER: admin
 
       - name: Comment blast radius result
         uses: marocchino/sticky-pull-request-comment@v2
