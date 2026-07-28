@@ -96,6 +96,6 @@ runs:
         message: |
           ## Blast radius check
 
-```
+          ```
           ${{ steps.check.outputs.result }}
-```
+          ```
