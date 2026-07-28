@@ -10,3 +10,10 @@ services:
     volumes:
       - ./fuseki/data:/fuseki
     restart: unless-stopped
+  api:
+    image: my-api
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16
