@@ -1,0 +1,68 @@
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout (full history for diffing)
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Generate Fuseki password
+      id: fuseki_pw
+      shell: bash
+      run: |
+        PASS=$(openssl rand -hex 20)
+        echo "::add-mask::$PASS"
+        echo "password=$PASS" >> "$GITHUB_OUTPUT"
+
+    - name: Fix Fuseki data permissions
+      shell: bash
+      run: |
+        mkdir -p "${{ github.action_path }}/fuseki/data"
+        chmod -R 777 "${{ github.action_path }}/fuseki/data"
+
+    - name: Start Fuseki
+      shell: bash
+      run: docker compose -f "${{ github.action_path }}/docker-compose.yml" up -d fuseki
+      env:
+        FUSEKI_ADMIN_PASSWORD: ${{ steps.fuseki_pw.outputs.password }}
+
+    - name: Wait for Fuseki
+      shell: bash
+      run: |
+        for i in {1..30}; do
+          curl -sf http://localhost:3030/\$/ping && break
+          sleep 1
+        done
+
+    - name: Create blastradius dataset
+      shell: bash
+      run: |
+        curl -sf -X POST http://localhost:3030/\$/datasets \
+          -u admin:${{ steps.fuseki_pw.outputs.password }} \
+          --data 'dbName=blastradius&dbType=tdb2' \
+          || echo "Dataset already exists"
+
+    - name: Install Python deps
+      shell: bash
+      run: pip install -r "${{ github.action_path }}/requirements.txt" --break-system-packages
+
+    - name: Import project graph
+      shell: bash
+      run: python "${{ github.action_path }}/cli.py" import-all .
+      env:
+        FUSEKI_ADMIN_PASSWORD: ${{ steps.fuseki_pw.outputs.password }}
+        FUSEKI_USER: admin
+
+    - name: Run check-diff
+      id: check
+      shell: bash
+      run: |
+        RESULT=$(python "${{ github.action_path }}/cli.py" check-diff \
+          "${{ inputs.base-sha }}" "${{ inputs.head-sha }}")
+        echo "result<<EOF" >> "$GITHUB_OUTPUT"
+        echo "$RESULT" >> "$GITHUB_OUTPUT"
+        echo "EOF" >> "$GITHUB_OUTPUT"
+      env:
+        FUSEKI_ADMIN_PASSWORD: ${{ steps.fuseki_pw.outputs.password }}
+        FUSEKI_USER: admin
+        
