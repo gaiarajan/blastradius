@@ -1,4 +1,14 @@
+"""
+Commands (replace uppercase):
+python cli.py check-diff   
+python cli.py check-diff(BASE, HEAD)
+python cli.py check SERVICE_NAME
+python cli.py import --source COMPOSE/K8s PATH_TO_FILE
+"""
+
 import argparse
+
+from diff_detect import get_touched_services
 
 from importers.compose import ComposeImporter
 from importers.k8s import K8sImporter
@@ -42,6 +52,16 @@ def cmd_check(args):
     else:
         print("all direct dependents have a fallback")
 
+def cmd_check_diff(args):
+    touched = get_touched_services(args.base, args.head)
+ 
+    if not touched:
+        print("No service changes detected in diff")
+        return
+ 
+    for node in sorted(touched):
+        print(f"\n--- {node} ---")
+        cmd_check(argparse.Namespace(node=node))
 
 def main():
     parser = argparse.ArgumentParser(prog="blastradius")
@@ -55,6 +75,11 @@ def main():
     p_check = subparsers.add_parser("check")
     p_check.add_argument("node")
     p_check.set_defaults(func=cmd_check)
+
+    p_diff = subparsers.add_parser("check-diff")
+    p_diff.add_argument("base", nargs="?", default=None)
+    p_diff.add_argument("head", nargs="?", default=None)
+    p_diff.set_defaults(func=cmd_check_diff)
 
     args = parser.parse_args()
     args.func(args)
