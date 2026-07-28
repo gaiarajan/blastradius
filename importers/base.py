@@ -6,6 +6,25 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Optional
 import re
+import yaml
+
+def detect_importer_type(path: str) -> str | None:
+    if not path.endswith((".yml", ".yaml")):
+        return None
+    try:
+        with open(path, "r") as f:
+            docs = list(yaml.safe_load_all(f))
+    except (yaml.YAMLError, FileNotFoundError):
+        return None
+
+    for doc in docs:
+        if not isinstance(doc, dict):
+            continue
+        if "services" in doc:
+            return "compose"
+        if "kind" in doc and doc["kind"] in ("Service", "Deployment"):
+            return "k8s"
+    return None
 
 
 def normalize_name(name: str) -> str:

@@ -8,11 +8,14 @@ python cli.py import --source COMPOSE/K8s PATH_TO_FILE
 
 import argparse
 
+import os
+
 from diff_detect import get_touched_services
 
 from importers.compose import ComposeImporter
 from importers.k8s import K8sImporter
-from importers.base import normalize_name
+from importers.base import normalize_name, detect_importer_type
+
 
 from sparql_client import insert_node, insert_edge, get_blast_radius, get_fallback_edges, fetch_graph
 
@@ -21,11 +24,8 @@ IMPORTERS = {
     "k8s": K8sImporter,
 }
 
-def cmd_import(args):
-    importer_cls = IMPORTERS[args.source]
-    importer = importer_cls()
-
-    result = importer.parse(args.path)
+def import_file(path, importer_type):
+    result = IMPORTERS[importer_type]().parse(path)
 
     for node in result.nodes:
         insert_node(node)
@@ -33,7 +33,33 @@ def cmd_import(args):
     for edge in result.edges:
         insert_edge(edge.source, edge.target, edge.weight)
 
-    print(f"imported {len(result.nodes)} nodes, {len(result.edges)} edges from {args.path}")
+    return len(result.nodes), len(result.edges)
+
+def cmd_import(args):
+    nodes, edges = import_file(args.path, args.source)
+    print(f"imported {nodes} nodes, {edges} edges from {args.path}")
+
+
+def cmd_import_all(args):
+    total_nodes = total_edges = 0
+
+    for dirpath, dirs, filenames in os.walk(args.root):
+        dirs[:] = [d for d in dirs if not d.startswith(".")]
+
+        for fname in filenames:
+            path = os.path.join(dirpath, fname)
+            importer_type = detect_importer_type(path)
+            if importer_type is None:
+                continue
+
+            try:
+                nodes, edges = import_file(path, importer_type)
+                total_nodes += nodes
+                total_edges += edges
+            except Exception as e:
+                print(f"warning: could not parse {path}: {e}")
+
+    print(f"imported: {total_nodes} nodes, {total_edges} edges total")
 
 
 def cmd_check(args):
@@ -64,13 +90,17 @@ def cmd_check_diff(args):
         cmd_check(argparse.Namespace(node=node))
 
 def main():
-    parser = argparse.ArgumentParser(prog="blastradius")
+    parser = argparse.ArgumentParser(prog="sparqlmotion")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     p_import = subparsers.add_parser("import")
     p_import.add_argument("--source", choices=IMPORTERS.keys(), required=True)
     p_import.add_argument("path")
     p_import.set_defaults(func=cmd_import)
+
+    p_import_all = subparsers.add_parser("import-all")
+    p_import_all.add_argument("root", nargs="?", default=".")
+    p_import_all.set_defaults(func=cmd_import_all)
 
     p_check = subparsers.add_parser("check")
     p_check.add_argument("node")

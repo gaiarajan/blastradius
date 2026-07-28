@@ -1,7 +1,6 @@
 import subprocess
 
-import yaml
-
+from importers.base import detect_importer_type
 from importers.compose import ComposeImporter
 from importers.k8s import K8sImporter
 
@@ -27,34 +26,11 @@ def get_changed_files(base_ref: str | None = None, head_ref: str | None = None) 
     return [line for line in files if line.strip()]
 
 
-def _detect_importer_type(path: str) -> str | None:
-    if not path.endswith((".yml", ".yaml")):
-        return None
-
-    try:
-        with open(path, "r") as f:
-            # multi-doc load for k8s
-            docs = list(yaml.safe_load_all(f))
-    except (yaml.YAMLError, FileNotFoundError):
-        # FileNotFoundError: file was deleted in this diff
-        return None
-
-    for doc in docs:
-        if not isinstance(doc, dict):
-            continue
-        if "services" in doc:
-            return "compose"
-        if "kind" in doc and doc["kind"] in ("Service", "Deployment"):
-            return "k8s"
-
-    return None
-
-
 def get_touched_services(base_ref: str | None = None, head_ref: str | None = None) -> set[str]:
     touched = set()
 
     for path in get_changed_files(base_ref, head_ref):
-        importer_type = _detect_importer_type(path)
+        importer_type = detect_importer_type(path)
         if importer_type is None:
             continue
 

@@ -73,7 +73,7 @@ export default function GraphView() {
             setScores(newScores);
           });
       })
-      .catch((err) => console.error("blast-radius fetch failed:", err));
+      .catch((err) => console.error("sparql-motion fetch failed:", err));
   }
 
   function handleBackgroundClick() {
