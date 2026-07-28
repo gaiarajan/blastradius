@@ -150,7 +150,7 @@ export default function GraphView() {
         linkLabel={(link) => {
           const type = link.edge_type || "unknown";
           const impactWeight = link.impactWeight !== undefined ? link.impactWeight.toFixed(2) : "n/a";
-          return `${type} (impactWeight: ${impactWeight})`;
+          return `${type} (criticality: ${impactWeight})`;
         }}
         linkWidth={(link) => (link.impactWeight ? 1 + link.impactWeight * 3 : 1)}
         linkDirectionalArrowLength={6}

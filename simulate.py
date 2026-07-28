@@ -12,7 +12,7 @@ def _build_reverse_adjacency(edges: list[dict]) -> dict[str, list[tuple[str, flo
     return ans
 
 
-def run_simulation(start_node: str, edges: list[dict], decay: float = 0.5) -> dict[str, float]:    
+def run_simulation(start_node: str, edges: list[dict], decay: float = 0.9) -> dict[str, float]:    
     start_node = normalize_name(start_node)
     adj = _build_reverse_adjacency(edges)
 
@@ -30,6 +30,6 @@ def run_simulation(start_node: str, edges: list[dict], decay: float = 0.5) -> di
                 queue.append(dep)
     return visited
 
-def simulate_cascade(start_node: str, decay: float = 0.5) -> dict[str, float]:  
+def simulate_cascade(start_node: str, decay: float = 0.9) -> dict[str, float]:  
     graph = fetch_graph()
     return run_simulation(start_node, graph.get("edges"), decay)  

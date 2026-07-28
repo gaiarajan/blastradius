@@ -65,7 +65,25 @@ def fetch_graph() -> dict:
 
     return {"nodes": list(nodes), "edges": edges}
 
-
+def get_fallback_edges() -> list[tuple[str, str]]:
+    FALLBACK_SERVICE_QUERY = """
+    PREFIX br: <http://blastradius.dev/ontology#>
+ 
+    SELECT ?service ?backup
+    WHERE {
+      ?service br:fallbackTo ?backup .
+    }
+    """
+    wrapper = SPARQLWrapper(FUSEKI_ENDPOINT)
+    wrapper.setQuery(FALLBACK_SERVICE_QUERY)
+    wrapper.setReturnFormat(JSON)
+    bindings = wrapper.queryAndConvert()['results']['bindings']
+ 
+    return [
+        (row['service']['value'].split('#')[-1], row['backup']['value'].split('#')[-1])
+        for row in bindings
+    ]
+    
 def _run_update(update_query: str) -> None:
     wrapper = SPARQLWrapper(FUSEKI_UPDATE_ENDPOINT)
     wrapper.setMethod(POST)
