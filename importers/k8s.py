@@ -55,7 +55,7 @@ class K8sImporter(Importer):
                     service_name = self._get_name(service)
                     if service_name in env_value:
                         target = normalize_name(service_name)
-                        e = Edge(source, target, "dependsOn", origin = "k8s", confidence = "low")
+                        e = Edge(source, target, "dependsOn", weight=1.0, origin = "k8s", confidence = "low")
                         res.add_edge(e)
         return res
 

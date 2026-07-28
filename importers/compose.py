@@ -65,6 +65,6 @@ class ComposeImporter(Importer):
                 print("WARNING")
             else:
                 result.add_node(target)
-        e = Edge(source, target, edge_type, weight = None, origin = "compose")
+        e = Edge(source, target, edge_type, weight = 1.0, origin = "compose")
         result.add_edge(e)
         

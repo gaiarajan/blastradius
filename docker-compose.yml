@@ -7,6 +7,7 @@ services:
     environment:
       - ADMIN_PASSWORD=${FUSEKI_ADMIN_PASSWORD}
       - JVM_ARGS=-Xmx2g
+      - FUSEKI_DATASET_1=blastradius
     volumes:
       - ./fuseki/data:/fuseki
     restart: unless-stopped

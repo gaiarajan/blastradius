@@ -1,0 +1,90 @@
+PREFIX br:   <http://blastradius.dev/ontology#>
+PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+# Toy e-commerce dependency graph -- example data only, NOT loaded
+# automatically. Load explicitly if you want a demo dataset to poke
+# at before pointing the tool at your own infra files:
+#
+#   curl -X POST http://localhost:3030/blastradius/data \
+#     -H "Content-Type: text/turtle" --data-binary @ontology/seed_data.ttl
+#
+# Requires schema.ttl to already be loaded first (uses classes/
+# properties declared there).
+
+# --- Teams ---
+
+br:team_platform  rdf:type  br:Team .
+br:team_checkout  rdf:type  br:Team .
+br:team_catalog   rdf:type  br:Team .
+
+# --- Services ---
+
+br:frontend  rdf:type  br:Service;
+        br:dependsOn  br:api_gateway;
+        br:ownedBy    br:team_platform .
+
+br:api_gateway  rdf:type  br:Service;
+        br:dependsOn  br:auth_service , br:checkout_service , br:catalog_service;
+        br:ownedBy    br:team_platform .
+
+br:auth_service  rdf:type  br:Service;
+        br:dependsOn  br:user_db;
+        br:ownedBy    br:team_platform .
+
+br:checkout_service  rdf:type  br:Service;
+        br:calls      br:catalog_service;
+        br:dependsOn  br:payment_api , br:inventory_service;
+        br:ownedBy    br:team_checkout .
+
+br:payment_api  rdf:type  br:Service;
+        br:fallbackTo  br:payment_api_backup;
+        br:ownedBy     br:team_checkout .
+
+br:payment_api_backup  rdf:type  br:Service;
+        br:ownedBy  br:team_checkout .
+
+br:inventory_service  rdf:type  br:Service;
+        br:dependsOn  br:warehouse_db;
+        br:ownedBy    br:team_catalog .
+
+br:catalog_service  rdf:type  br:Service;
+        br:dependsOn  br:catalog_db;
+        br:ownedBy    br:team_catalog .
+
+br:user_db       rdf:type  br:Database .
+br:warehouse_db  rdf:type  br:Database .
+br:catalog_db    rdf:type  br:Database .
+
+# --- Edge weight annotations (RDF-star) ---
+
+<< br:frontend br:dependsOn br:api_gateway >>
+        br:impactWeight  1.0 .
+
+<< br:api_gateway br:dependsOn br:auth_service >>
+        br:impactWeight  1.0 .
+
+<< br:auth_service br:dependsOn br:user_db >>
+        br:impactWeight  1.0 .
+
+<< br:api_gateway br:dependsOn br:checkout_service >>
+        br:impactWeight  0.9 .
+
+<< br:api_gateway br:dependsOn br:catalog_service >>
+        br:impactWeight  0.6 .
+
+<< br:checkout_service br:dependsOn br:payment_api >>
+        br:impactWeight  0.9 .
+
+<< br:checkout_service br:dependsOn br:inventory_service >>
+        br:impactWeight  0.7 .
+
+<< br:inventory_service br:dependsOn br:warehouse_db >>
+        br:impactWeight  1.0 .
+
+<< br:catalog_service br:dependsOn br:catalog_db >>
+        br:impactWeight  1.0 .
+
+<< br:checkout_service br:calls br:catalog_service >>
+        br:syncType  "sync" .

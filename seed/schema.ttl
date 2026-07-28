@@ -1,0 +1,55 @@
+PREFIX br:   <http://blastradius.dev/ontology#>
+PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+# --- Classes ---
+
+br:Dependency  rdf:type  rdfs:Class;
+        rdfs:comment  "Abstract superclass for anything a Service can depend on" .
+
+br:Service  rdf:type     rdfs:Class;
+        rdfs:comment     "A deployable backend service";
+        rdfs:subClassOf  br:Dependency .
+
+br:Database  rdf:type    rdfs:Class;
+        rdfs:comment     "A persistent data store";
+        rdfs:subClassOf  br:Dependency .
+
+br:Package  rdf:type     rdfs:Class;
+        rdfs:comment     "An external library or package dependency";
+        rdfs:subClassOf  br:Dependency .
+
+br:APIEndpoint  rdf:type  rdfs:Class;
+        rdfs:comment  "A specific endpoint exposed by a Service" .
+
+br:Team  rdf:type     rdfs:Class;
+        rdfs:comment  "A team that owns one or more services" .
+
+# --- Properties ---
+
+br:dependsOn  rdf:type  rdf:Property;
+        rdfs:comment  "Service A requires Dependency B to function";
+        rdfs:domain   br:Service;
+        rdfs:range    br:Dependency .
+
+br:calls  rdf:type    rdf:Property;
+        rdfs:comment  "Service A makes runtime calls to Service B";
+        rdfs:domain   br:Service;
+        rdfs:range    br:Service .
+
+br:fallbackTo  rdf:type  rdf:Property;
+        rdfs:comment  "If the subject is unavailable, the object can serve as a substitute, dampening cascade impact";
+        rdfs:domain   br:Dependency;
+        rdfs:range    br:Dependency .
+
+br:ownedBy  rdf:type  rdf:Property;
+        rdfs:comment  "Which team is responsible for a service";
+        rdfs:domain   br:Service;
+        rdfs:range    br:Team .
+
+br:impactWeight  rdf:type  rdf:Property;
+        rdfs:comment  "Qualifier (0.0-1.0) on a dependsOn/calls edge via RDF-star, indicating how severely failure propagates across it" .
+
+br:syncType  rdf:type  rdf:Property;
+        rdfs:comment  "Qualifier on a calls edge via RDF-star: sync or async" .
