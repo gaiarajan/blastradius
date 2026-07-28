@@ -89,13 +89,13 @@ runs:
         FUSEKI_ADMIN_PASSWORD: ${{ steps.fuseki_pw.outputs.password }}
         FUSEKI_USER: admin
 
-   - name: Comment blast radius result
-      uses: marocchino/sticky-pull-request-comment@v2
+    - name: Comment blast radius result
       if: inputs.post-comment == 'true'
-        with:
-          message: |
-            ## Blast radius check
+      uses: marocchino/sticky-pull-request-comment@v2
+      with:
+        message: |
+          ## Blast radius check
 
-            ```
-            ${{ steps.check.outputs.result }}
-            ```
+```
+          ${{ steps.check.outputs.result }}
+```
