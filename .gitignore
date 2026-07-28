@@ -10,6 +10,7 @@ env/
 .idea/
 
 .env
+.secrets
 
 *.ttl.bak
 /fuseki
