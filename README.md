@@ -1,8 +1,38 @@
-# Quickstart
 
+# SPARQLMotion 
+
+Ask _what breaks if payment-api goes down?_ and get a live answer computed from your project's Compose/K8s files, in a terminal command, a live visualization, or an automated PR comment.
+
+Dependencies between services are represented internally as RDF triples. Existing blast-radius tools use bespoke graph structures; this project explores whether a standard RDF knowledge graph can serve a similar use case, while staying queryable and extensible via SPARQL. Read more in [Why SPARQL?](https://github.com/gaiarajan/sparqlmotion/tree/main/README.md#why-sparql).
+
+
+## Table of contents
+1. [Demos](https://github.com/gaiarajan/sparqlmotion/tree/main#demos)
+2. [Quickstart](https://github.com/gaiarajan/sparqlmotion/tree/main#quickstart)
+3. [Why SPARQL?](https://github.com/gaiarajan/sparqlmotion/tree/main/README.md#why-sparql)
+4. [Technical details](https://github.com/gaiarajan/sparqlmotion/tree/main/README.md#technical-details)
+5. [Why did you call it that?](https://github.com/gaiarajan/sparqlmotion/tree/main/README.md#why-is-it-called-that)
+
+   
+## Demos
+
+In the interactive web UI:
+
+<img width="900" alt="SPARQLMotion web UI" src="https://github.com/user-attachments/assets/6ab9ec6b-3333-44c1-9288-4ee86994a19b" />
+
+As an automated PR comment ([example](https://github.com/gaiarajan/blastradius-action-test/pull/1)):
+
+<img width="900" alt="SPARQLMotion Github Action" src="https://github.com/user-attachments/assets/085df82b-2b81-4e5f-854f-70890a37dd54" />
+
+In the CLI:
+
+<img width="900" alt="SPARQLMotion CLI" src="https://github.com/user-attachments/assets/ded96e89-8fee-4674-81a9-de8f4c19e5f0" />
+
+
+## Quickstart
 Three options: Github Action (automatically runs on each PR), web UI, or CLI. 
 
-## Github Action
+### Github Action
 In the repo you want to add blast-radius to:
 
 **1. Add the following as `.github/workflows/blast-radius.yml`:**
@@ -31,9 +61,9 @@ Commit and push.
 
 **2.** Open a PR that touches a service file, and the check runs automatically.
 
-## Web UI and CLI
+### Web UI and CLI
 
-### 0. Shared setup 
+#### 0. Shared setup 
 
 ```bash
 git clone https://github.com/gaiarajan/sparqlmotion.git
@@ -45,11 +75,98 @@ cd sparqlmotion
 `setup.sh` creates a `.env` file, starts Fuseki (the engine for triples), 
 creates an empty dataset, and installs Python dependencies. 
 
-If you are experiencing permission issues, run `chmod +x setup.sh` first.
+If you get permission issues, run `chmod +x setup.sh` first.
 
 `./setup.sh --reset` stops Fuseki and wipes `./fuseki/data`.
 
-If you prefer to run the steps manually, here are the commands:
+If you prefer to run the steps manually, [here are the commands](https://github.com/gaiarajan/sparqlmotion/edit/main/README.md#appendix).
+
+### CLI (ad hoc, terminal)
+
+_You must have done the [shared setup](https://github.com/gaiarajan/sparqlmotion/edit/main/README.md#0-shared-setup) above first._
+
+```bash
+# import your service definitions (compose or k8s)
+python cli.py import --source compose path/to/docker-compose.yml
+
+# or import everything under a directory at once
+python cli.py import-all .
+
+# ask a quick question
+python cli.py check payment-api
+
+# see what a diff between two github commit hashes touches
+python cli.py check-diff <base-sha> <head-sha>
+
+# or check your uncommitted diff
+python cli.py check-diff
+```
+
+**Want to explore without importing actual definitions?** 
+Add seed data instead:
+
+```bash
+# set auth credentials
+set -a; source .env; set +a
+curl -v -X POST "http://localhost:3030/blastradius/data?default" \
+  -u "admin:$FUSEKI_ADMIN_PASSWORD" \
+  -H "Content-Type: text/turtle" --data-binary @seed/schema.ttl
+curl -v -X POST "http://localhost:3030/blastradius/data?default" \
+  -u "admin:$FUSEKI_ADMIN_PASSWORD" \
+  -H "Content-Type: text/turtle" --data-binary @seed/seed_data.ttl
+
+python cli.py check checkout_service
+```
+
+### Mode 2: Web UI 
+
+_You must have done the [shared setup](https://github.com/gaiarajan/sparqlmotion/edit/main/README.md#0-shared-setup) above first._
+
+```bash
+# backend (from repo root, Fuseki already running from step 0)
+uvicorn main:app --reload
+# API + docs at http://127.0.0.1:8000/docs
+```
+
+```bash
+# frontend (separate terminal)
+cd frontend
+npm install
+npm run dev
+# open the printed localhost URL (default: http://localhost:5173)
+```
+
+The second URL above is a live graph of your project's dependencies!
+
+## Why SPARQL?
+
+[SPARQL](https://www.w3.org/TR/sparql11-query/) allows us to represent the dependencies between services as _relationships_ between triples, instead of cross-sections of lists or tables. It also fits well with cascading service failures in a couple interesting ways: 
+
+- It allows us to calculate recursive failures in a single property-path expression: `?affected br:dependsOn+ br:payment-api`.
+- RDF-star puts metadata directly on edges, allowing us to represent criticality seamlessly within the edges themselves, rather than in a join table or a single node's properties.
+
+
+## Technical details
+
+As more code is entered into large codebases with no or little context, understanding the blast radius of a change (_without_ having to maintain a separate table with each dependency change) feels increasingly important. 
+
+This project uses [Apache Jena Fuseki](https://jena.apache.org/documentation/fuseki2/) for the triple store; 
+Python + [FastAPI](https://fastapi.tiangolo.com/) for the backend, using SPARQLWrapper and SPARQL queries to talk to Fuseki;
+[react-force-graph](https://github.com/vasturiano/react-force-graph) for animated frontend.
+
+Architecture diagram:
+
+
+## Why is it called that?
+
+SPARQL is my favorite query language. 
+Donnie Darko is one of my favorite movies. 
+
+![Sparkle Sparklemotion GIF](https://c.tenor.com/PO3AUbv6aFUAAAAd/tenor.gif)
+
+## Appendix
+
+To run without setup script:
 
 ```bash
 cat > .env <<EOF
@@ -83,58 +200,3 @@ docker compose down
 sudo rm -rf ./fuseki/data
 ```
 
-## CLI (ad hoc, terminal)
-
-_You must have done the shared setup above first._
-
-```bash
-# import your service definitions (compose or k8s)
-python cli.py import --source compose path/to/docker-compose.yml
-# or import everything under a directory at once
-python cli.py import-all .
-
-# ask a quick question
-python cli.py check payment-api
-
-# see what a diff between two github commit hashes touches
-python cli.py check-diff <base-sha> <head-sha>
-
-# or check your uncommitted diff
-python cli.py check-diff
-```
-
-**Want to poke around before importing actual definitions?** 
-Add seed data instead:
-
-```bash
-curl -X POST http://localhost:3030/blastradius/data \
-  -H "Content-Type: text/turtle" --data-binary @ontology/schema.ttl
-curl -X POST http://localhost:3030/blastradius/data \
-  -H "Content-Type: text/turtle" --data-binary @ontology/seed_data.ttl
-
-python cli.py check checkout_service
-```
-
-## Mode 2: Web UI (visual, localhost:8000)
-
-_You must have done the shared setup above first._
-
-```bash
-# backend (from repo root, Fuseki already running from step 0)
-uvicorn main:app --reload
-# API + docs at http://127.0.0.1:8000/docs
-```
-
-```bash
-# frontend (separate terminal)
-cd frontend
-npm install
-npm run dev
-# open the printed localhost URL (default: http://localhost:5173)
-```
-## Why is it called that?
-
-SPARQL is my favorite query language. 
-Donnie Darko is one of my favorite movies. 
-
-![Sparkle Sparklemotion GIF](https://c.tenor.com/PO3AUbv6aFUAAAAd/tenor.gif)
