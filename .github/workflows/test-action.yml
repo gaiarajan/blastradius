@@ -1,0 +1,21 @@
+name: Test Blast Radius Action
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  blast-radius:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./action
+        with:
+          fuseki-password: ${{ secrets.FUSEKI_ADMIN_PASSWORD }}
