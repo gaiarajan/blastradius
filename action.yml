@@ -1,3 +1,26 @@
+name: 'Blast Radius Check'
+description: 'Detects services a PR touches and reports blast radius and missing fallbacks'
+branding:
+  icon: 'radio'
+  color: 'orange'
+
+inputs:
+  base-sha:
+    description: 'Base ref/SHA to diff from'
+    required: true
+  head-sha:
+    description: 'Head ref/SHA to diff to'
+    required: true
+  post-comment:
+    description: 'Post the result as a sticky PR comment'
+    required: false
+    default: 'true'
+
+outputs:
+  result:
+    description: 'Blast radius check output'
+    value: ${{ steps.check.outputs.result }}
+
 runs:
   using: 'composite'
   steps:
@@ -65,4 +88,14 @@ runs:
       env:
         FUSEKI_ADMIN_PASSWORD: ${{ steps.fuseki_pw.outputs.password }}
         FUSEKI_USER: admin
-        
+
+   - name: Comment blast radius result
+      uses: marocchino/sticky-pull-request-comment@v2
+      if: inputs.post-comment == 'true'
+        with:
+          message: |
+            ## Blast radius check
+
+            ```
+            ${{ steps.check.outputs.result }}
+            ```
