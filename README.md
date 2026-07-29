@@ -16,7 +16,7 @@ Dependencies between services are represented internally as RDF triples. Existin
 ## Demos
 
 In the interactive web UI:
-<img width="850" alt="SPARQLMotion web UI" src="https://github.com/user-attachments/assets/44f9d20d-d4c1-4700-be41-672a4fe4fe7f" />
+<img width="850" alt="SPARQLMotion web UI" src="https://github.com/user-attachments/assets/b5f0331a-b8b6-4630-9815-ae798977172c" />
 
 <br /><br />
 As an automated PR comment ([example](https://github.com/gaiarajan/blastradius-action-test/pull/1)):
